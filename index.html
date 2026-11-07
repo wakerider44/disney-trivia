@@ -1,0 +1,94 @@
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='theme-color' content='#0b1437'><link rel='manifest' href='manifest.json'><link rel='apple-touch-icon' href='icon.svg'><title>Disney Park Trivia</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;background:#0b1437;color:#fff;min-height:100vh}
+.wrap{max-width:640px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 32px}
+h1{font-size:26px;text-align:center;margin:8px 0 16px}
+.card{background:#16224f;border-radius:16px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;opacity:.8;margin:10px 0 4px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid #33427e;background:#0b1437;color:#fff;font-size:16px}
+button{font:inherit;cursor:pointer}
+.btn{width:100%;padding:14px;border:0;border-radius:12px;background:#f5b700;color:#1a1a1a;font-size:18px;font-weight:700;margin-top:10px}
+.btn.alt{background:#33427e;color:#fff}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 0;opacity:1;font-size:16px;margin:0}.chk input{width:22px;height:22px}
+.hidden{display:none!important}
+.top{display:flex;justify-content:space-between;font-size:14px;opacity:.85}
+.q{font-size:21px;font-weight:600;margin:14px 0;line-height:1.3}
+.bar{height:10px;background:#0b1437;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:#f5b700;width:100%}
+.pts{display:flex;justify-content:center;gap:8px;margin:12px 0}.pts b{padding:6px 12px;border-radius:20px;background:#33427e;font-size:14px}.pts b.on{background:#f5b700;color:#1a1a1a}
+.ans{display:block;width:100%;text-align:left;padding:16px;margin:8px 0;border-radius:12px;border:2px solid #33427e;background:#1d2d66;color:#fff;font-size:17px;transition:opacity .3s,transform .3s}
+.ans.gone{opacity:0;transform:scale(.9);pointer-events:none}
+.ans.good{background:#15803d;border-color:#4ade80}.ans.bad{background:#b91c1c;border-color:#f87171}
+.fb{text-align:center;font-size:18px;font-weight:700;margin:10px 0}
+.big{font-size:30px;text-align:center;font-weight:700;margin:16px 0}
+table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left;border-bottom:1px solid #33427e}td:last-child,th:last-child{text-align:right}
+.small{font-size:12px;opacity:.7;margin-top:8px}
+</style></head><body><div class='wrap'><h1>Disney Park Trivia</h1>
+<div id='setup'><div class='card'>
+<label>Number of players (1-8)</label><input id='np' type='number' min='1' max='8' value='2' inputmode='numeric'>
+<div id='names'></div>
+<label>Number of questions</label><input id='nq' type='number' min='1' value='15' inputmode='numeric'>
+<label>Parks</label><div id='parks'></div>
+<label>Seconds between answers disappearing</label><select id='iv'><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option></select>
+<button class='btn' id='go'>Start Game</button><button class='btn alt' id='rs'>Reset seen questions</button>
+<div class='small' id='info'></div><div class='small'>Version 1</div></div></div>
+<div id='ready' class='hidden'><div class='card'><div class='small' id='rdyinfo'></div><div class='big' id='rdy'></div><button class='btn' id='rdybtn'>I'm ready</button></div></div>
+<div id='game' class='hidden'><div class='card'><div class='top'><span id='who'></span><span id='sc'></span></div><div class='small' id='tag'></div><div class='q' id='qt'></div>
+<div class='bar'><i id='bar'></i></div><div class='pts' id='pts'><b data-p='3'>3 pts</b><b data-p='2'>2 pts</b><b data-p='1'>1 pt</b><b data-p='0'>0 pts</b></div>
+<div id='ans'></div><div class='fb' id='fb'></div><button class='btn hidden' id='nxt'>Next</button></div></div>
+<div id='results' class='hidden'><div class='card'><div class='big' id='win'></div><table id='tbl'></table><button class='btn' id='again'>Play again (same setup)</button><button class='btn alt' id='newg'>New setup</button></div></div>
+</div>
+<script src='questions.js'></script>
+<script>
+const E=id=>document.getElementById(id);
+const PARKS=[{id:'epcot',name:'EPCOT',emoji:'🌍'},{id:'magic-kingdom',name:'Magic Kingdom',emoji:'🏰'},{id:'hollywood-studios',name:'Hollywood Studios',emoji:'🎬'}];
+const NL=String.fromCharCode(10);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const BANK={};for(const p of PARKS){BANK[p.id]=(window.QUESTIONS[p.id]||'').split(NL).filter(Boolean).map(l=>{const a=l.split('|');return{k:p.id+'|'+a[0],park:p.name,q:a[0],a:a[1],w:a.slice(2)}})}
+let seen=new Set(JSON.parse(localStorage.getItem('dt_seen')||'[]'));
+const save=()=>localStorage.setItem('dt_seen',JSON.stringify([...seen]));
+let G=null;
+function show(id){['setup','ready','game','results'].forEach(s=>E(s).classList.toggle('hidden',s!==id))}
+function buildNames(){const n=Math.max(1,Math.min(8,+E('np').value||1));const box=E('names');const old=[...box.querySelectorAll('input')].map(i=>i.value);box.innerHTML='';for(let i=0;i<n;i++){const l=document.createElement('label');l.textContent='Player '+(i+1)+' name';const inp=document.createElement('input');inp.placeholder='Player '+(i+1);inp.value=old[i]||'';box.appendChild(l);box.appendChild(inp)}}
+function buildParks(){E('parks').innerHTML=PARKS.map(p=>`<label class='chk'><input type='checkbox' id='pk_${p.id}' checked><span>${p.emoji} ${p.name} <span class='small' id='cnt_${p.id}'></span></span></label>`).join('');PARKS.forEach(p=>E('pk_'+p.id).onchange=refresh)}
+function pool(){return PARKS.filter(p=>E('pk_'+p.id).checked).flatMap(p=>BANK[p.id])}
+function refresh(){PARKS.forEach(p=>{const t=BANK[p.id].length,u=BANK[p.id].filter(x=>!seen.has(x.k)).length;E('cnt_'+p.id).textContent='('+u+' unseen of '+t+')'});const pl=pool();E('info').textContent=pl.length+' questions in selected parks. Seen questions are skipped until the pool runs out.'}
+function startGame(){
+const pl=pool();if(!pl.length){alert('Pick at least one park');return}
+const n=Math.min(Math.max(1,+E('nq').value||1),pl.length);
+let qs=shuffle(pl.filter(x=>!seen.has(x.k))).slice(0,n);
+if(qs.length<n){const used=new Set(qs.map(x=>x.k));pl.forEach(x=>seen.delete(x.k));qs=qs.concat(shuffle(pl.filter(x=>!used.has(x.k))).slice(0,n-qs.length))}
+const players=[...E('names').querySelectorAll('input')].map((e,i)=>({name:e.value.trim()||'Player '+(i+1),score:0,right:0}));
+G={players,qs,i:0,iv:+E('iv').value*1000,C:[],locked:true,tm:null,stage:0};
+next()}
+function next(){if(G.i>=G.qs.length){return results()}
+if(G.players.length>1){E('rdyinfo').textContent='Question '+(G.i+1)+' of '+G.qs.length;E('rdy').textContent=G.players[G.i%G.players.length].name+', you are up';show('ready')}else ask()}
+function vis(){return G.C.filter(o=>!o.gone).length}
+function upd(){const p=vis()-1;document.querySelectorAll('#pts b').forEach(b=>b.classList.toggle('on',+b.dataset.p===p))}
+function ask(){
+const q=G.qs[G.i],pl=G.players[G.i%G.players.length];seen.add(q.k);save();
+E('who').textContent=pl.name+' - Q'+(G.i+1)+'/'+G.qs.length;E('sc').textContent='Score: '+pl.score;E('tag').textContent=q.park;E('qt').textContent=q.q;E('ans').innerHTML='';E('fb').textContent='';E('nxt').classList.add('hidden');E('bar').style.width='100%';
+G.C=shuffle([{t:q.a,c:true},...q.w.map(t=>({t,c:false}))]);
+G.C.forEach(o=>{const b=document.createElement('button');b.className='ans';b.textContent=o.t;b.onclick=()=>{if(!G.locked)finish(o)};o.b=b;o.gone=false;E('ans').appendChild(b)});
+G.locked=false;G.stage=Date.now();upd();show('game');clearInterval(G.tm);G.tm=setInterval(tick,50)}
+function tick(){const el=Date.now()-G.stage;E('bar').style.width=Math.max(0,100-el/G.iv*100)+'%';
+if(el>=G.iv){if(vis()>1){const w=shuffle(G.C.filter(o=>!o.gone&&!o.c))[0];w.gone=true;w.b.classList.add('gone');G.stage=Date.now();upd()}else finish(null)}}
+function finish(o){clearInterval(G.tm);G.locked=true;
+const pl=G.players[G.i%G.players.length];const pts=o&&o.c?vis()-1:0;
+G.C.forEach(x=>{x.b.disabled=true;if(x.c)x.b.classList.add('good')});if(o&&!o.c)o.b.classList.add('bad');
+if(o&&o.c){pl.right++;pl.score+=pts}
+E('fb').textContent=!o?'Time is up! 0 points':o.c?'Correct! +'+pts+(pts===1?' point':' points'):'Wrong! 0 points';
+E('sc').textContent='Score: '+pl.score;
+E('nxt').textContent=G.i+1>=G.qs.length?'See results':'Next question';E('nxt').classList.remove('hidden')}
+function results(){
+const P=G.players.length,N=G.qs.length;
+const rows=G.players.map((p,idx)=>({...p,asked:Math.floor(N/P)+(idx<N%P?1:0)})).sort((a,b)=>b.score-a.score);
+const top=rows[0].score,w=rows.filter(r=>r.score===top).map(r=>r.name);
+E('win').textContent=P===1?rows[0].name+': '+top+' points':(w.length>1?'Tie: '+w.join(' & '):w[0]+' wins!');
+E('tbl').innerHTML='<tr><th>#</th><th>Player</th><th>Correct</th><th>Points</th></tr>'+rows.map((r,i)=>`<tr><td>${i+1}</td><td></td><td>${r.right}/${r.asked}</td><td>${r.score}</td></tr>`).join('');
+E('tbl').querySelectorAll('tr').forEach((tr,i)=>{if(i>0)tr.children[1].textContent=rows[i-1].name});
+show('results')}
+E('np').oninput=buildNames;E('go').onclick=startGame;E('rdybtn').onclick=ask;E('nxt').onclick=()=>{G.i++;next()};
+E('rs').onclick=()=>{seen.clear();save();refresh()};E('again').onclick=startGame;E('newg').onclick=()=>{refresh();show('setup')};
+buildNames();buildParks();refresh();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
