@@ -26,11 +26,11 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left
 <div id='setup'><div class='card'>
 <label>Number of players (1-8)</label><input id='np' type='number' min='1' max='8' value='2' inputmode='numeric'>
 <div id='names'></div>
-<label>Number of questions</label><input id='nq' type='number' min='1' value='15' inputmode='numeric'>
+<label>Questions per player</label><input id='nq' type='number' min='1' value='10' inputmode='numeric'>
 <label>Parks</label><div id='parks'></div>
 <label>Seconds between answers disappearing</label><select id='iv'><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option></select>
 <button class='btn' id='go'>Start Game</button><button class='btn alt' id='rs'>Reset seen questions</button>
-<div class='small' id='info'></div><div class='small'>Version 1</div></div></div>
+<div class='small' id='info'></div><div class='small'>Version 2</div></div></div>
 <div id='ready' class='hidden'><div class='card'><div class='small' id='rdyinfo'></div><div class='big' id='rdy'></div><button class='btn' id='rdybtn'>I'm ready</button></div></div>
 <div id='game' class='hidden'><div class='card'><div class='top'><span id='who'></span><span id='sc'></span></div><div class='small' id='tag'></div><div class='q' id='qt'></div>
 <div class='bar'><i id='bar'></i></div><div class='pts' id='pts'><b data-p='3'>3 pts</b><b data-p='2'>2 pts</b><b data-p='1'>1 pt</b><b data-p='0'>0 pts</b></div>
@@ -54,7 +54,11 @@ function pool(){return PARKS.filter(p=>E('pk_'+p.id).checked).flatMap(p=>BANK[p.
 function refresh(){PARKS.forEach(p=>{const t=BANK[p.id].length,u=BANK[p.id].filter(x=>!seen.has(x.k)).length;E('cnt_'+p.id).textContent='('+u+' unseen of '+t+')'});const pl=pool();E('info').textContent=pl.length+' questions in selected parks. Seen questions are skipped until the pool runs out.'}
 function startGame(){
 const pl=pool();if(!pl.length){alert('Pick at least one park');return}
-const n=Math.min(Math.max(1,+E('nq').value||1),pl.length);
+const P=E('names').querySelectorAll('input').length;
+const want=Math.max(1,+E('nq').value||1);
+const per=Math.max(1,Math.min(want,Math.floor(pl.length/P)));
+if(per<want)alert('Only '+pl.length+' questions in the selected parks, so each player gets '+per+' question'+(per===1?'':'s')+'.');
+const n=Math.min(per*P,pl.length);
 let qs=shuffle(pl.filter(x=>!seen.has(x.k))).slice(0,n);
 if(qs.length<n){const used=new Set(qs.map(x=>x.k));pl.forEach(x=>seen.delete(x.k));qs=qs.concat(shuffle(pl.filter(x=>!used.has(x.k))).slice(0,n-qs.length))}
 const players=[...E('names').querySelectorAll('input')].map((e,i)=>({name:e.value.trim()||'Player '+(i+1),score:0,right:0}));
