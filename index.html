@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='theme-color' content='#0b1437'><link rel='manifest' href='manifest.json'><link rel='apple-touch-icon' href='icon.svg'><title>Disney Park Trivia</title>
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><meta name='apple-mobile-web-app-capable' content='yes'><meta name='apple-mobile-web-app-title' content='Park Trivia'><meta name='theme-color' content='#0b1437'><link rel='manifest' href='manifest.json'><link rel='apple-touch-icon' href='apple-touch-icon.png'><link rel='icon' type='image/png' href='icon-192.png'><title>Disney Park Trivia</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;background:#0b1437;color:#fff;min-height:100vh}
 .wrap{max-width:640px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 32px}
@@ -12,6 +12,7 @@ button{font:inherit;cursor:pointer}
 .chk{display:flex;align-items:center;gap:10px;padding:8px 0;opacity:1;font-size:16px;margin:0}.chk input{width:22px;height:22px}
 .hidden{display:none!important}
 .top{display:flex;justify-content:space-between;font-size:14px;opacity:.85}
+.pname{font-size:22px;font-weight:700;color:#f5b700;margin-top:8px}
 .q{font-size:21px;font-weight:600;margin:14px 0;line-height:1.3}
 .bar{height:10px;background:#0b1437;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:#f5b700;width:100%}
 .pts{display:flex;justify-content:center;gap:8px;margin:12px 0}.pts b{padding:6px 12px;border-radius:20px;background:#33427e;font-size:14px}.pts b.on{background:#f5b700;color:#1a1a1a}
@@ -30,9 +31,9 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left
 <label>Parks</label><div id='parks'></div>
 <label>Seconds between answers disappearing</label><select id='iv'><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option></select>
 <button class='btn' id='go'>Start Game</button><button class='btn alt' id='rs'>Reset seen questions</button>
-<div class='small' id='info'></div><div class='small'>Version 2</div></div></div>
+<div class='small' id='info'></div><div class='small'>Version 3</div></div></div>
 <div id='ready' class='hidden'><div class='card'><div class='small' id='rdyinfo'></div><div class='big' id='rdy'></div><button class='btn' id='rdybtn'>I'm ready</button></div></div>
-<div id='game' class='hidden'><div class='card'><div class='top'><span id='who'></span><span id='sc'></span></div><div class='small' id='tag'></div><div class='q' id='qt'></div>
+<div id='game' class='hidden'><div class='card'><div class='top'><span id='who'></span><span id='sc'></span></div><div class='pname' id='pn'></div><div class='small' id='tag'></div><div class='q' id='qt'></div>
 <div class='bar'><i id='bar'></i></div><div class='pts' id='pts'><b data-p='3'>3 pts</b><b data-p='2'>2 pts</b><b data-p='1'>1 pt</b><b data-p='0'>0 pts</b></div>
 <div id='ans'></div><div class='fb' id='fb'></div><button class='btn hidden' id='nxt'>Next</button></div></div>
 <div id='results' class='hidden'><div class='card'><div class='big' id='win'></div><table id='tbl'></table><button class='btn' id='again'>Play again (same setup)</button><button class='btn alt' id='newg'>New setup</button></div></div>
@@ -64,13 +65,14 @@ if(qs.length<n){const used=new Set(qs.map(x=>x.k));pl.forEach(x=>seen.delete(x.k
 const players=[...E('names').querySelectorAll('input')].map((e,i)=>({name:e.value.trim()||'Player '+(i+1),score:0,right:0}));
 G={players,qs,i:0,iv:+E('iv').value*1000,C:[],locked:true,tm:null,stage:0};
 next()}
+function prog(){const P=G.players.length,per=Math.ceil(G.qs.length/P);return 'Question '+(Math.floor(G.i/P)+1)+' of '+per+' | Player '+(G.i%P+1)+' of '+P}
 function next(){if(G.i>=G.qs.length){return results()}
-if(G.players.length>1){E('rdyinfo').textContent='Question '+(G.i+1)+' of '+G.qs.length;E('rdy').textContent=G.players[G.i%G.players.length].name+', you are up';show('ready')}else ask()}
+if(G.players.length>1){E('rdyinfo').textContent=prog();E('rdy').textContent=G.players[G.i%G.players.length].name+', you are up';show('ready')}else ask()}
 function vis(){return G.C.filter(o=>!o.gone).length}
 function upd(){const p=vis()-1;document.querySelectorAll('#pts b').forEach(b=>b.classList.toggle('on',+b.dataset.p===p))}
 function ask(){
 const q=G.qs[G.i],pl=G.players[G.i%G.players.length];seen.add(q.k);save();
-E('who').textContent=pl.name+' - Q'+(G.i+1)+'/'+G.qs.length;E('sc').textContent='Score: '+pl.score;E('tag').textContent=q.park;E('qt').textContent=q.q;E('ans').innerHTML='';E('fb').textContent='';E('nxt').classList.add('hidden');E('bar').style.width='100%';
+E('who').textContent=prog();E('pn').textContent=pl.name;E('sc').textContent='Score: '+pl.score;E('tag').textContent=q.park;E('qt').textContent=q.q;E('ans').innerHTML='';E('fb').textContent='';E('nxt').classList.add('hidden');E('bar').style.width='100%';
 G.C=shuffle([{t:q.a,c:true},...q.w.map(t=>({t,c:false}))]);
 G.C.forEach(o=>{const b=document.createElement('button');b.className='ans';b.textContent=o.t;b.onclick=()=>{if(!G.locked)finish(o)};o.b=b;o.gone=false;E('ans').appendChild(b)});
 G.locked=false;G.stage=Date.now();upd();show('game');clearInterval(G.tm);G.tm=setInterval(tick,50)}
