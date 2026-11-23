@@ -28,10 +28,10 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left
 <label>Number of players (1-8)</label><input id='np' type='number' min='1' max='8' value='2' inputmode='numeric'>
 <div id='names'></div>
 <label>Questions per player</label><input id='nq' type='number' min='1' value='10' inputmode='numeric'>
-<label>Parks</label><div id='parks'></div>
+<label>Categories</label><div id='parks'></div>
 <label>Seconds between answers disappearing</label><select id='iv'><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option></select>
 <button class='btn' id='go'>Start Game</button><button class='btn alt' id='rs'>Reset seen questions</button>
-<div class='small' id='info'></div><div class='small'>Version 3</div></div></div>
+<div class='small' id='info'></div><div class='small'>Version 4</div></div></div>
 <div id='ready' class='hidden'><div class='card'><div class='small' id='rdyinfo'></div><div class='big' id='rdy'></div><button class='btn' id='rdybtn'>I'm ready</button></div></div>
 <div id='game' class='hidden'><div class='card'><div class='top'><span id='who'></span><span id='sc'></span></div><div class='pname' id='pn'></div><div class='small' id='tag'></div><div class='q' id='qt'></div>
 <div class='bar'><i id='bar'></i></div><div class='pts' id='pts'><b data-p='3'>3 pts</b><b data-p='2'>2 pts</b><b data-p='1'>1 pt</b><b data-p='0'>0 pts</b></div>
@@ -39,9 +39,10 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left
 <div id='results' class='hidden'><div class='card'><div class='big' id='win'></div><table id='tbl'></table><button class='btn' id='again'>Play again (same setup)</button><button class='btn alt' id='newg'>New setup</button></div></div>
 </div>
 <script src='questions.js'></script>
+<script src='packs.js'></script>
 <script>
 const E=id=>document.getElementById(id);
-const PARKS=[{id:'epcot',name:'EPCOT',emoji:'🌍'},{id:'magic-kingdom',name:'Magic Kingdom',emoji:'🏰'},{id:'hollywood-studios',name:'Hollywood Studios',emoji:'🎬'}];
+const PARKS=[{id:'epcot',name:'EPCOT',emoji:'🌍'},{id:'magic-kingdom',name:'Magic Kingdom',emoji:'🏰'},{id:'hollywood-studios',name:'Hollywood Studios',emoji:'🎬'},{id:'countries',name:'Countries',emoji:'🌎'},{id:'sports',name:'Sports',emoji:'🏆'}];
 const NL=String.fromCharCode(10);
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const BANK={};for(const p of PARKS){BANK[p.id]=(window.QUESTIONS[p.id]||'').split(NL).filter(Boolean).map(l=>{const a=l.split('|');return{k:p.id+'|'+a[0],park:p.name,q:a[0],a:a[1],w:a.slice(2)}})}
@@ -52,13 +53,13 @@ function show(id){['setup','ready','game','results'].forEach(s=>E(s).classList.t
 function buildNames(){const n=Math.max(1,Math.min(8,+E('np').value||1));const box=E('names');const old=[...box.querySelectorAll('input')].map(i=>i.value);box.innerHTML='';for(let i=0;i<n;i++){const l=document.createElement('label');l.textContent='Player '+(i+1)+' name';const inp=document.createElement('input');inp.placeholder='Player '+(i+1);inp.value=old[i]||'';box.appendChild(l);box.appendChild(inp)}}
 function buildParks(){E('parks').innerHTML=PARKS.map(p=>`<label class='chk'><input type='checkbox' id='pk_${p.id}' checked><span>${p.emoji} ${p.name} <span class='small' id='cnt_${p.id}'></span></span></label>`).join('');PARKS.forEach(p=>E('pk_'+p.id).onchange=refresh)}
 function pool(){return PARKS.filter(p=>E('pk_'+p.id).checked).flatMap(p=>BANK[p.id])}
-function refresh(){PARKS.forEach(p=>{const t=BANK[p.id].length,u=BANK[p.id].filter(x=>!seen.has(x.k)).length;E('cnt_'+p.id).textContent='('+u+' unseen of '+t+')'});const pl=pool();E('info').textContent=pl.length+' questions in selected parks. Seen questions are skipped until the pool runs out.'}
+function refresh(){PARKS.forEach(p=>{const t=BANK[p.id].length,u=BANK[p.id].filter(x=>!seen.has(x.k)).length;E('cnt_'+p.id).textContent='('+u+' unseen of '+t+')'});const pl=pool();E('info').textContent=pl.length+' questions in selected categories. Seen questions are skipped until the pool runs out.'}
 function startGame(){
-const pl=pool();if(!pl.length){alert('Pick at least one park');return}
+const pl=pool();if(!pl.length){alert('Pick at least one category');return}
 const P=E('names').querySelectorAll('input').length;
 const want=Math.max(1,+E('nq').value||1);
 const per=Math.max(1,Math.min(want,Math.floor(pl.length/P)));
-if(per<want)alert('Only '+pl.length+' questions in the selected parks, so each player gets '+per+' question'+(per===1?'':'s')+'.');
+if(per<want)alert('Only '+pl.length+' questions in the selected categories, so each player gets '+per+' question'+(per===1?'':'s')+'.');
 const n=Math.min(per*P,pl.length);
 let qs=shuffle(pl.filter(x=>!seen.has(x.k))).slice(0,n);
 if(qs.length<n){const used=new Set(qs.map(x=>x.k));pl.forEach(x=>seen.delete(x.k));qs=qs.concat(shuffle(pl.filter(x=>!used.has(x.k))).slice(0,n-qs.length))}
