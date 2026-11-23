@@ -31,7 +31,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left
 <label>Categories</label><div id='parks'></div>
 <label>Seconds between answers disappearing</label><select id='iv'><option>3</option><option selected>4</option><option>5</option><option>6</option><option>8</option></select>
 <button class='btn' id='go'>Start Game</button><button class='btn alt' id='rs'>Reset seen questions</button>
-<div class='small' id='info'></div><div class='small'>Version 12</div></div></div>
+<div class='small' id='info'></div><div class='small'>Version 13</div></div></div>
 <div id='ready' class='hidden'><div class='card'><div class='small' id='rdyinfo'></div><div class='big' id='rdy'></div><button class='btn' id='rdybtn'>I'm ready</button></div></div>
 <div id='game' class='hidden'><div class='card'><div class='top'><span id='who'></span><span id='sc'></span></div><div class='pname' id='pn'></div><div class='small' id='tag'></div><div class='q' id='qt'></div>
 <div class='bar'><i id='bar'></i></div><div class='pts' id='pts'><b data-p='3'>3 pts</b><b data-p='2'>2 pts</b><b data-p='1'>1 pt</b><b data-p='0'>0 pts</b></div>
@@ -48,9 +48,10 @@ table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;text-align:left
 <script src='texas.js'></script>
 <script src='christmas.js'></script>
 <script src='cheese.js'></script>
+<script src='desserts.js'></script>
 <script>
 const E=id=>document.getElementById(id);
-const PARKS=[{id:'epcot',name:'EPCOT',emoji:'🌍'},{id:'magic-kingdom',name:'Magic Kingdom',emoji:'🏰'},{id:'hollywood-studios',name:'Hollywood Studios',emoji:'🎬'},{id:'films',name:'Disney & Pixar Films',emoji:'🍿'},{id:'starwars',name:'Star Wars',emoji:'🚀'},{id:'christmas',name:'Christmas',emoji:'🎄'},{id:'cheese',name:'Cheese',emoji:'🧀'},{id:'countries',name:'Countries',emoji:'🌎'},{id:'food',name:'Food of the World',emoji:'🍜'},{id:'sports',name:'Sports',emoji:'🏆'},{id:'soccer',name:'Soccer',emoji:'⚽'},{id:'usa',name:'United States',emoji:'🇺🇸'},{id:'texas',name:'Texas',emoji:'🤠'}];
+const PARKS=[{id:'epcot',name:'EPCOT',emoji:'🌍'},{id:'magic-kingdom',name:'Magic Kingdom',emoji:'🏰'},{id:'hollywood-studios',name:'Hollywood Studios',emoji:'🎬'},{id:'films',name:'Disney & Pixar Films',emoji:'🍿'},{id:'starwars',name:'Star Wars',emoji:'🚀'},{id:'christmas',name:'Christmas',emoji:'🎄'},{id:'cheese',name:'Cheese',emoji:'🧀'},{id:'desserts',name:'Desserts',emoji:'🍰'},{id:'countries',name:'Countries',emoji:'🌎'},{id:'food',name:'Food of the World',emoji:'🍜'},{id:'sports',name:'Sports',emoji:'🏆'},{id:'soccer',name:'Soccer',emoji:'⚽'},{id:'usa',name:'United States',emoji:'🇺🇸'},{id:'texas',name:'Texas',emoji:'🤠'}];
 const NL=String.fromCharCode(10);
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const BANK={};for(const p of PARKS){BANK[p.id]=(window.QUESTIONS[p.id]||'').split(NL).filter(Boolean).map(l=>{const a=l.split('|');return{k:p.id+'|'+a[0],park:p.name,q:a[0],a:a[1],w:a.slice(2)}})}
